@@ -1,6 +1,11 @@
 <template>
   <section class="charts-grid">
-    <EChartPanel title="核心负载趋势" subtitle="活动总对话数、新增对话数、消息发送数、API 调用量" :option="loadTrendOption" />
+    <EChartPanel
+      title="核心负载趋势"
+      subtitle="点击任意时间点查看客户 cid 贡献"
+      :option="loadTrendOption"
+      @chart-click="handleLoadTrendClick"
+    />
     <EChartPanel title="API 成功/失败量" subtitle="堆叠统计最近窗口请求结果" :option="apiResultOption" />
     <EChartPanel title="响应时间趋势" subtitle="AVG / P95 / P99" :option="latencyOption" />
     <EChartPanel title="WebSocket 实时通信" subtitle="连接、断开、重连" :option="websocketOption" />
@@ -16,6 +21,11 @@ import type { TimeSeriesPoint } from '../types/dashboard';
 
 const props = defineProps<{
   points: TimeSeriesPoint[];
+  selectedTimestamp?: string;
+}>();
+
+const emit = defineEmits<{
+  selectTimePoint: [timestamp: string];
 }>();
 
 const labels = computed(() =>
@@ -49,7 +59,20 @@ const loadTrendOption = computed(() => ({
     { name: '消息发送数', type: 'line', smooth: true, data: props.points.map((p) => p.messages) },
     { name: 'API 调用量', type: 'line', smooth: true, data: props.points.map((p) => p.apiCalls) },
   ],
+  graphic: selectedIndex.value >= 0 ? [] : [],
 }));
+
+const selectedIndex = computed(() =>
+  props.selectedTimestamp ? props.points.findIndex((point) => point.timestamp === props.selectedTimestamp) : -1,
+);
+
+function handleLoadTrendClick(params: unknown) {
+  const dataIndex = typeof params === 'object' && params && 'dataIndex' in params ? Number(params.dataIndex) : -1;
+  const point = props.points[dataIndex];
+  if (point) {
+    emit('selectTimePoint', point.timestamp);
+  }
+}
 
 const apiResultOption = computed(() => ({
   color: ['#22c55e', '#ef4444'],

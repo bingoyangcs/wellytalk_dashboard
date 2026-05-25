@@ -2,6 +2,8 @@ import {
   createDefaultFilters,
   mockAlerts,
   mockApiRanking,
+  mockCustomerLoadRanking,
+  mockCustomerTrend,
   mockServiceHealth,
   mockSummary,
   mockTimeSeries,
@@ -26,4 +28,12 @@ export async function fetchDashboardData(filters: DashboardFilters) {
     serviceHealth,
     alerts,
   };
+}
+
+export async function fetchCustomerLoadAttribution(selectedTimestamp: string, points: Awaited<ReturnType<typeof mockTimeSeries>>) {
+  return mockCustomerLoadRanking(points, selectedTimestamp);
+}
+
+export async function fetchCustomerTrend(cid: string, points: Awaited<ReturnType<typeof mockTimeSeries>>) {
+  return mockCustomerTrend(points, cid);
 }

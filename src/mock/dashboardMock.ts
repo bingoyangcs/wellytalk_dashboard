@@ -1,6 +1,8 @@
 import type {
   AlertItem,
   ApiRankingItem,
+  CustomerLoadRankingItem,
+  CustomerTrendPoint,
   DashboardFilters,
   ServiceHealthItem,
   SummaryMetric,
@@ -30,6 +32,21 @@ const serviceNames: Array<Omit<ServiceHealthItem, 'instances' | 'healthyInstance
   { service: 'redis-cluster', type: 'cache' },
   { service: 'message-queue', type: 'queue' },
 ];
+
+const customers = [
+  ['cid_10086', '星河零售'],
+  ['cid_10021', '海川教育'],
+  ['cid_10037', '云杉电商'],
+  ['cid_10052', '北辰出行'],
+  ['cid_10073', '启明 SaaS'],
+  ['cid_10094', '松果金融'],
+  ['cid_10108', '青蓝医疗'],
+  ['cid_10129', '远山物流'],
+  ['cid_10147', '禾木生活'],
+  ['cid_10166', '凌云制造'],
+  ['cid_10185', '安途旅游'],
+  ['cid_10203', '百川政企'],
+] as const;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -227,6 +244,64 @@ export function mockApiRanking(points: TimeSeriesPoint[]): Promise<ApiRankingIte
   });
 
   return Promise.resolve(items.sort((a, b) => b.calls - a.calls));
+}
+
+export function mockCustomerLoadRanking(
+  points: TimeSeriesPoint[],
+  selectedTimestamp: string,
+): Promise<CustomerLoadRankingItem[]> {
+  const pointIndex = Math.max(
+    points.findIndex((point) => point.timestamp === selectedTimestamp),
+    0,
+  );
+  const selectedPoint = points[pointIndex] ?? points[points.length - 1];
+  const previousPoint = points[Math.max(pointIndex - 1, 0)] ?? selectedPoint;
+  const totalActive = Math.max(selectedPoint?.activeConversations ?? 1, 1);
+
+  const items = customers.map(([cid, customerName], index) => {
+    const priorityWeight = 1.08 - index * 0.055;
+    const burst = pointIndex % (index + 5) === 0 ? 1.32 : 1;
+    const share = clamp(priorityWeight * burst + Math.random() * 0.2, 0.26, 1.38);
+    const activeConversations = Math.round(clamp(totalActive * share / 6.8, 8, totalActive * 0.34));
+    const newConversations = Math.round(clamp(activeConversations * (0.12 + Math.random() * 0.15), 2, 72));
+    const messages = Math.round(activeConversations * clamp(5.8 + Math.random() * 4.5, 4, 13));
+    const apiCalls = Math.round(messages * clamp(2.7 + Math.random() * 1.4, 2.2, 5.2));
+    const previousActive = Math.max(previousPoint.activeConversations * share / 7.5, 1);
+
+    return {
+      cid,
+      customerName,
+      activeConversations,
+      newConversations,
+      messages,
+      apiCalls,
+      errorRate: round(clamp(0.35 + index * 0.11 + Math.random() * 1.8, 0.1, 4.8), 2),
+      p95Latency: Math.round(clamp(155 + index * 18 + Math.random() * 150, 120, 560)),
+      contributionRate: round((activeConversations / totalActive) * 100, 1),
+      changeRate: round(((activeConversations - previousActive) / previousActive) * 100, 1),
+    };
+  });
+
+  return Promise.resolve(items.sort((a, b) => b.activeConversations - a.activeConversations).slice(0, 10));
+}
+
+export function mockCustomerTrend(points: TimeSeriesPoint[], cid: string): Promise<CustomerTrendPoint[]> {
+  const customerIndex = Math.max(customers.findIndex(([customerCid]) => customerCid === cid), 0);
+  const weight = clamp(0.18 - customerIndex * 0.008, 0.055, 0.18);
+
+  return Promise.resolve(
+    points.map((point, index) => {
+      const pulse = index % (customerIndex + 9) === 0 ? 1.22 : 1;
+      const activeConversations = Math.round(clamp(point.activeConversations * weight * pulse + Math.random() * 8, 4, 180));
+      const messages = Math.round(activeConversations * clamp(5.5 + Math.random() * 3.8, 4, 12));
+      return {
+        timestamp: point.timestamp,
+        activeConversations,
+        messages,
+        apiCalls: Math.round(messages * clamp(2.5 + Math.random() * 1.2, 2, 5)),
+      };
+    }),
+  );
 }
 
 export function mockServiceHealth(points: TimeSeriesPoint[]): Promise<ServiceHealthItem[]> {

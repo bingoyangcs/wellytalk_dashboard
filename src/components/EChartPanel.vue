@@ -46,6 +46,10 @@ const props = defineProps<{
   option: EChartsCoreOption;
 }>();
 
+const emit = defineEmits<{
+  chartClick: [params: unknown];
+}>();
+
 const chartRef = ref<HTMLDivElement>();
 const chart = shallowRef<ECharts>();
 let resizeObserver: ResizeObserver | undefined;
@@ -58,6 +62,7 @@ function renderChart() {
   if (!chartRef.value) return;
   if (!chart.value) {
     chart.value = echarts.init(chartRef.value);
+    chart.value.on('click', (params) => emit('chartClick', params));
   }
   chart.value.setOption(props.option, true);
 }

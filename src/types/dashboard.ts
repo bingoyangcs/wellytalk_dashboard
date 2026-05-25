@@ -44,6 +44,26 @@ export interface ApiRankingItem {
   p95Latency: number;
 }
 
+export interface CustomerLoadRankingItem {
+  cid: string;
+  customerName: string;
+  activeConversations: number;
+  newConversations: number;
+  messages: number;
+  apiCalls: number;
+  errorRate: number;
+  p95Latency: number;
+  contributionRate: number;
+  changeRate: number;
+}
+
+export interface CustomerTrendPoint {
+  timestamp: string;
+  activeConversations: number;
+  messages: number;
+  apiCalls: number;
+}
+
 export interface ServiceHealthItem {
   service: string;
   type: 'gateway' | 'service' | 'database' | 'cache' | 'queue';

@@ -5,7 +5,18 @@
     <el-skeleton v-if="loading && !loaded" :rows="12" animated />
     <template v-else>
       <MetricCardGrid :metrics="summary" />
-      <TrendCharts :points="timeseries" />
+      <TrendCharts
+        :points="timeseries"
+        :selected-timestamp="selectedTimestamp"
+        @select-time-point="selectTimePoint"
+      />
+      <CustomerLoadAttribution
+        :selected-timestamp="selectedTimestamp"
+        :ranking="customerRanking"
+        :selected-cid="selectedCid"
+        :customer-trend="customerTrend"
+        @select-customer="selectCustomer"
+      />
       <section class="tables-grid">
         <ApiRankingTable :items="apiRanking" />
         <ServiceHealthTable :items="serviceHealth" />
@@ -19,14 +30,22 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import AlertsPanel from '../components/AlertsPanel.vue';
 import ApiRankingTable from '../components/ApiRankingTable.vue';
+import CustomerLoadAttribution from '../components/CustomerLoadAttribution.vue';
 import FilterBar from '../components/FilterBar.vue';
 import MetricCardGrid from '../components/MetricCardGrid.vue';
 import ServiceHealthTable from '../components/ServiceHealthTable.vue';
 import TrendCharts from '../components/TrendCharts.vue';
-import { createDefaultFilters, fetchDashboardData } from '../api/dashboard';
+import {
+  createDefaultFilters,
+  fetchCustomerLoadAttribution,
+  fetchCustomerTrend,
+  fetchDashboardData,
+} from '../api/dashboard';
 import type {
   AlertItem,
   ApiRankingItem,
+  CustomerLoadRankingItem,
+  CustomerTrendPoint,
   DashboardFilters,
   ServiceHealthItem,
   SummaryMetric,
@@ -37,8 +56,12 @@ const filters = ref<DashboardFilters>(createDefaultFilters());
 const summary = ref<SummaryMetric[]>([]);
 const timeseries = ref<TimeSeriesPoint[]>([]);
 const apiRanking = ref<ApiRankingItem[]>([]);
+const customerRanking = ref<CustomerLoadRankingItem[]>([]);
+const customerTrend = ref<CustomerTrendPoint[]>([]);
 const serviceHealth = ref<ServiceHealthItem[]>([]);
 const alerts = ref<AlertItem[]>([]);
+const selectedTimestamp = ref<string>();
+const selectedCid = ref<string>();
 const loading = ref(false);
 const loaded = ref(false);
 let refreshTimer: number | undefined;
@@ -51,8 +74,33 @@ async function loadData() {
   apiRanking.value = data.apiRanking;
   serviceHealth.value = data.serviceHealth;
   alerts.value = data.alerts;
+  if (!selectedTimestamp.value || !data.timeseries.some((point) => point.timestamp === selectedTimestamp.value)) {
+    selectedTimestamp.value = data.timeseries[data.timeseries.length - 1]?.timestamp;
+  }
+  await refreshCustomerAttribution();
   loading.value = false;
   loaded.value = true;
+}
+
+async function refreshCustomerAttribution() {
+  if (!selectedTimestamp.value || !timeseries.value.length) return;
+  customerRanking.value = await fetchCustomerLoadAttribution(selectedTimestamp.value, timeseries.value);
+  if (!selectedCid.value || !customerRanking.value.some((customer) => customer.cid === selectedCid.value)) {
+    selectedCid.value = customerRanking.value[0]?.cid;
+  }
+  if (selectedCid.value) {
+    customerTrend.value = await fetchCustomerTrend(selectedCid.value, timeseries.value);
+  }
+}
+
+function selectTimePoint(timestamp: string) {
+  selectedTimestamp.value = timestamp;
+  void refreshCustomerAttribution();
+}
+
+async function selectCustomer(cid: string) {
+  selectedCid.value = cid;
+  customerTrend.value = await fetchCustomerTrend(cid, timeseries.value);
 }
 
 function updateFilters(nextFilters: DashboardFilters) {

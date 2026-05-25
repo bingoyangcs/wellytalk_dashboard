@@ -146,11 +146,22 @@ input {
   margin-bottom: 16px;
 }
 
+.attribution-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .panel {
   background: #ffffff;
   border: 1px solid #dbe3ef;
   border-radius: 8px;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.attribution-panel {
+  min-width: 0;
 }
 
 .chart-panel {
@@ -330,6 +341,7 @@ input {
   }
 
   .charts-grid,
+  .attribution-grid,
   .tables-grid,
   .alerts-list {
     grid-template-columns: 1fr;

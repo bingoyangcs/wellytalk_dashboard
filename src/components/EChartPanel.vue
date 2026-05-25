@@ -1,0 +1,62 @@
+<template>
+  <section class="panel chart-panel">
+    <div class="panel__header">
+      <div>
+        <h2>{{ title }}</h2>
+        <p v-if="subtitle">{{ subtitle }}</p>
+      </div>
+    </div>
+    <div ref="chartRef" class="chart"></div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import * as echarts from 'echarts/core';
+import {
+  BarChart,
+  LineChart,
+} from 'echarts/charts';
+import {
+  GridComponent,
+  LegendComponent,
+  TooltipComponent,
+} from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import type { ECharts, EChartsCoreOption } from 'echarts/core';
+
+echarts.use([LineChart, BarChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
+
+const props = defineProps<{
+  title: string;
+  subtitle?: string;
+  option: EChartsCoreOption;
+}>();
+
+const chartRef = ref<HTMLDivElement>();
+const chart = shallowRef<ECharts>();
+let resizeObserver: ResizeObserver | undefined;
+
+function renderChart() {
+  if (!chartRef.value) return;
+  if (!chart.value) {
+    chart.value = echarts.init(chartRef.value);
+  }
+  chart.value.setOption(props.option, true);
+}
+
+onMounted(() => {
+  renderChart();
+  if (chartRef.value) {
+    resizeObserver = new ResizeObserver(() => chart.value?.resize());
+    resizeObserver.observe(chartRef.value);
+  }
+});
+
+watch(() => props.option, renderChart, { deep: true });
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  chart.value?.dispose();
+});
+</script>

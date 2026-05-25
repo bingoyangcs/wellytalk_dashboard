@@ -6,6 +6,7 @@
     <template v-else>
       <MetricCardGrid :metrics="summary" />
       <TrendCharts
+        variant="core"
         :points="timeseries"
         :selected-timestamp="selectedTimestamp"
         @select-time-point="selectTimePoint"
@@ -17,6 +18,13 @@
         :customer-trend="customerTrend"
         @select-customer="selectCustomer"
       />
+      <section class="section-heading">
+        <div>
+          <h2>服务器监视</h2>
+          <p>WebSocket、API、响应时间、基础设施、队列和服务实例健康状态</p>
+        </div>
+      </section>
+      <TrendCharts variant="server" :points="timeseries" />
       <section class="tables-grid">
         <ApiRankingTable :items="apiRanking" />
         <ServiceHealthTable :items="serviceHealth" />

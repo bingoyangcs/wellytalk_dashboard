@@ -1,5 +1,5 @@
 <template>
-  <section class="attribution-grid">
+  <section class="section-stack">
     <section class="panel attribution-panel">
       <div class="panel__header">
         <div>

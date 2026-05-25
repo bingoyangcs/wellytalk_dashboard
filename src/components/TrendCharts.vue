@@ -1,11 +1,13 @@
 <template>
-  <section class="charts-grid">
+  <section v-if="variant === 'core'" class="section-stack">
     <EChartPanel
       title="核心负载趋势"
       subtitle="点击任意时间点查看客户 cid 贡献"
       :option="loadTrendOption"
       @chart-click="handleLoadTrendClick"
     />
+  </section>
+  <section v-else class="charts-grid">
     <EChartPanel title="API 成功/失败量" subtitle="堆叠统计最近窗口请求结果" :option="apiResultOption" />
     <EChartPanel title="响应时间趋势" subtitle="AVG / P95 / P99" :option="latencyOption" />
     <EChartPanel title="WebSocket 实时通信" subtitle="连接、断开、重连" :option="websocketOption" />
@@ -22,6 +24,7 @@ import type { TimeSeriesPoint } from '../types/dashboard';
 const props = defineProps<{
   points: TimeSeriesPoint[];
   selectedTimestamp?: string;
+  variant?: 'core' | 'server';
 }>();
 
 const emit = defineEmits<{

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 interface ResizablePanelOptions {
   initialSpan?: number;
@@ -14,7 +14,9 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
   const panelRef = ref<HTMLElement>();
   const columnSpan = ref(options.initialSpan ?? 6);
   const panelHeight = ref(options.initialHeight ?? 384);
+  const panelWidth = ref(0);
   const resizing = ref(false);
+  let panelObserver: ResizeObserver | undefined;
   let resizeState:
     | {
         pointerId: number;
@@ -37,6 +39,7 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
     if (!grid) return;
 
     const gridWidth = grid.getBoundingClientRect().width;
+    panelWidth.value = panelRef.value?.getBoundingClientRect().width ?? 0;
     resizing.value = true;
     resizeState = {
       pointerId: event.pointerId,
@@ -70,6 +73,7 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
       options.maxHeight ?? 720,
       Math.max(options.minHeight ?? 300, resizeState.startHeight + event.clientY - resizeState.startY),
     );
+    panelWidth.value = panelRef.value?.getBoundingClientRect().width ?? panelWidth.value;
     options.onResize?.();
   }
 
@@ -84,7 +88,22 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
     options.onResize?.();
   }
 
+  onMounted(() => {
+    void nextTick(() => {
+      if (!panelRef.value) return;
+      panelWidth.value = panelRef.value.getBoundingClientRect().width;
+      panelObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          panelWidth.value = entry.contentRect.width;
+        }
+      });
+      panelObserver.observe(panelRef.value);
+    });
+  });
+
   onBeforeUnmount(() => {
+    panelObserver?.disconnect();
     window.removeEventListener('pointermove', handleResize);
     window.removeEventListener('pointerup', stopResize);
     window.removeEventListener('pointercancel', stopResize);
@@ -94,6 +113,7 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
   return {
     panelRef,
     panelHeight,
+    panelWidth,
     panelStyle,
     resizing,
     startResize,

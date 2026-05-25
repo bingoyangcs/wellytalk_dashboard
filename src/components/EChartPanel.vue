@@ -16,7 +16,8 @@
       class="chart-resize-handle"
       type="button"
       aria-label="拖拽调整图表大小"
-      @pointerdown="startResize"
+      title="拖拽调整大小"
+      @pointerdown.stop.prevent="startResize"
     ></button>
   </section>
 </template>

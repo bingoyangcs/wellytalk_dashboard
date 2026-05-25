@@ -32,6 +32,7 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
   }));
 
   function startResize(event: PointerEvent) {
+    event.preventDefault();
     const grid = panelRef.value?.parentElement;
     if (!grid) return;
 
@@ -52,10 +53,13 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
 
     window.addEventListener('pointermove', handleResize);
     window.addEventListener('pointerup', stopResize);
+    window.addEventListener('pointercancel', stopResize);
+    document.body.classList.add('is-resizing-panel');
   }
 
   function handleResize(event: PointerEvent) {
     if (!resizeState) return;
+    event.preventDefault();
 
     const spanDelta = Math.round((event.clientX - resizeState.startX) / resizeState.columnWidth);
     columnSpan.value = Math.min(
@@ -75,12 +79,16 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
     resizeState = undefined;
     window.removeEventListener('pointermove', handleResize);
     window.removeEventListener('pointerup', stopResize);
+    window.removeEventListener('pointercancel', stopResize);
+    document.body.classList.remove('is-resizing-panel');
     options.onResize?.();
   }
 
   onBeforeUnmount(() => {
     window.removeEventListener('pointermove', handleResize);
     window.removeEventListener('pointerup', stopResize);
+    window.removeEventListener('pointercancel', stopResize);
+    document.body.classList.remove('is-resizing-panel');
   });
 
   return {

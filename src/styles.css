@@ -201,26 +201,34 @@ input {
 .resize-handle,
 .chart-resize-handle {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 18px;
-  height: 18px;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
   border-radius: 4px;
   background:
-    linear-gradient(135deg, transparent 0 46%, #94a3b8 46% 54%, transparent 54%),
-    linear-gradient(135deg, transparent 0 64%, #94a3b8 64% 72%, transparent 72%);
+    linear-gradient(135deg, transparent 0 54%, #94a3b8 54% 60%, transparent 60%),
+    linear-gradient(135deg, transparent 0 70%, #94a3b8 70% 76%, transparent 76%);
   cursor: nwse-resize;
   opacity: 0.72;
+  touch-action: none;
 }
 
 .resize-handle:hover,
 .chart-resize-handle:hover {
   opacity: 1;
   background:
-    linear-gradient(135deg, transparent 0 46%, #2563eb 46% 54%, transparent 54%),
-    linear-gradient(135deg, transparent 0 64%, #2563eb 64% 72%, transparent 72%);
+    linear-gradient(135deg, transparent 0 54%, #2563eb 54% 60%, transparent 60%),
+    linear-gradient(135deg, transparent 0 70%, #2563eb 70% 76%, transparent 76%);
+}
+
+.is-resizing-panel,
+.is-resizing-panel * {
+  cursor: nwse-resize !important;
+  user-select: none !important;
 }
 
 .rank-cell {

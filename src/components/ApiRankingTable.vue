@@ -38,7 +38,8 @@
       class="resize-handle"
       type="button"
       aria-label="拖拽调整表格大小"
-      @pointerdown="startResize"
+      title="拖拽调整大小"
+      @pointerdown.stop.prevent="startResize"
     ></button>
   </section>
 </template>

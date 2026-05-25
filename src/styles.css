@@ -130,8 +130,10 @@ input {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: dense;
   gap: 16px;
+  align-items: start;
   margin-bottom: 16px;
 }
 
@@ -147,6 +149,19 @@ input {
   border: 1px solid #dbe3ef;
   border-radius: 8px;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+.chart-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chart-panel--resizing {
+  z-index: 2;
+  user-select: none;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
 }
 
 .panel__header {
@@ -168,8 +183,32 @@ input {
 
 .chart {
   width: 100%;
-  height: 318px;
+  flex: 1;
+  min-height: 220px;
   padding: 4px 8px 12px;
+}
+
+.chart-resize-handle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background:
+    linear-gradient(135deg, transparent 0 46%, #94a3b8 46% 54%, transparent 54%),
+    linear-gradient(135deg, transparent 0 64%, #94a3b8 64% 72%, transparent 72%);
+  cursor: nwse-resize;
+  opacity: 0.72;
+}
+
+.chart-resize-handle:hover {
+  opacity: 1;
+  background:
+    linear-gradient(135deg, transparent 0 46%, #2563eb 46% 54%, transparent 54%),
+    linear-gradient(135deg, transparent 0 64%, #2563eb 64% 72%, transparent 72%);
 }
 
 .rank-cell {
@@ -275,6 +314,10 @@ input {
   .alerts-list {
     grid-template-columns: 1fr;
   }
+
+  .chart-panel {
+    grid-column: 1 / -1 !important;
+  }
 }
 
 @media (max-width: 720px) {
@@ -295,7 +338,7 @@ input {
     grid-template-columns: 1fr;
   }
 
-  .chart {
-    height: 280px;
+  .chart-panel {
+    min-height: 340px !important;
   }
 }

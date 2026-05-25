@@ -1,12 +1,17 @@
 <template>
-  <section class="panel">
+  <section
+    ref="panelRef"
+    class="panel table-panel"
+    :class="{ 'panel--resizing': resizing }"
+    :style="panelStyle"
+  >
     <div class="panel__header">
       <div>
         <h2>服务实例健康状态</h2>
         <p>网关、业务服务、数据库、缓存、队列</p>
       </div>
     </div>
-    <el-table :data="items" height="420" stripe>
+    <el-table :data="items" :height="tableHeight" stripe>
       <el-table-column prop="service" label="服务" min-width="190" />
       <el-table-column label="类型" width="86">
         <template #default="{ row }">{{ typeText(row.type) }}</template>
@@ -33,15 +38,30 @@
       </el-table-column>
       <el-table-column prop="version" label="版本" width="92" />
     </el-table>
+    <button
+      class="resize-handle"
+      type="button"
+      aria-label="拖拽调整表格大小"
+      @pointerdown="startResize"
+    ></button>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useResizablePanel } from '../composables/useResizablePanel';
 import type { ServiceHealthItem } from '../types/dashboard';
 
 defineProps<{
   items: ServiceHealthItem[];
 }>();
+
+const { panelRef, panelHeight, panelStyle, resizing, startResize } = useResizablePanel({
+  initialHeight: 486,
+  minHeight: 360,
+  maxHeight: 760,
+});
+const tableHeight = computed(() => Math.max(260, panelHeight.value - 66));
 
 function typeText(type: ServiceHealthItem['type']) {
   return {

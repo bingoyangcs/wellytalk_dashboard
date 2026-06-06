@@ -2,7 +2,7 @@
   <section v-if="variant === 'core'" class="section-stack">
     <EChartPanel
       title="核心负载趋势"
-      subtitle="点击任意时间点查看客户 cid 贡献"
+      :subtitle="`展示粒度 ${granularityLabel} · 新增/消息/API 为窗口累计，活动对话为窗口状态值 · 点击时间点查看 cid 贡献`"
       :option="loadTrendOption"
       :initial-span="24"
       @chart-click="handleLoadTrendClick"
@@ -26,6 +26,7 @@ const props = defineProps<{
   points: TimeSeriesPoint[];
   selectedTimestamp?: string;
   variant?: 'core' | 'server';
+  actualGranularityMinutes: number;
 }>();
 
 const emit = defineEmits<{
@@ -34,21 +35,42 @@ const emit = defineEmits<{
 
 const labels = computed(() =>
   props.points.map((point) =>
-    new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(point.timestamp)),
+    new Intl.DateTimeFormat(
+      'zh-CN',
+      props.actualGranularityMinutes >= 1440
+        ? { year: '2-digit', month: '2-digit', day: '2-digit' }
+        : props.actualGranularityMinutes >= 120
+          ? { month: '2-digit', day: '2-digit', hour: '2-digit' }
+          : { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' },
+    ).format(new Date(point.timestamp)),
   ),
 );
+
+const granularityLabel = computed(() => {
+  const minutes = props.actualGranularityMinutes;
+  if (minutes < 60) return `${minutes} 分钟`;
+  if (minutes < 1440) return `${minutes / 60} 小时`;
+  if (minutes < 10080) return `${minutes / 1440} 天`;
+  return `${minutes / 10080} 周`;
+});
+const showSymbols = computed(() => props.points.length <= 96);
 
 const baseGrid = {
   left: 42,
   right: 22,
   top: 42,
-  bottom: 34,
+  bottom: 58,
 };
 
 const tooltip = {
   trigger: 'axis',
   axisPointer: { type: 'cross' },
 };
+
+const dataZoom = [
+  { type: 'inside', start: 0, end: 100 },
+  { type: 'slider', height: 18, bottom: 8, start: 0, end: 100 },
+];
 
 const loadTrendOption = computed(() => ({
   color: ['#7c3aed', '#2563eb', '#16a34a', '#f59e0b'],
@@ -57,13 +79,45 @@ const loadTrendOption = computed(() => ({
   grid: baseGrid,
   xAxis: { type: 'category', data: labels.value, boundaryGap: false },
   yAxis: { type: 'value' },
+  dataZoom,
   series: [
-    { name: '活动总对话数', type: 'line', smooth: true, data: props.points.map((p) => p.activeConversations) },
-    { name: '新增对话数', type: 'line', smooth: true, data: props.points.map((p) => p.conversations) },
-    { name: '消息发送数', type: 'line', smooth: true, data: props.points.map((p) => p.messages) },
-    { name: 'API 调用量', type: 'line', smooth: true, data: props.points.map((p) => p.apiCalls) },
+    {
+      name: '活动总对话数',
+      type: 'line',
+      smooth: true,
+      showSymbol: showSymbols.value,
+      data: props.points.map((p) => p.activeConversations),
+      markLine:
+        selectedIndex.value >= 0
+          ? {
+              symbol: 'none',
+              label: { formatter: '选中窗口' },
+              data: [{ xAxis: labels.value[selectedIndex.value] }],
+            }
+          : undefined,
+    },
+    {
+      name: '新增对话数',
+      type: 'line',
+      smooth: true,
+      showSymbol: showSymbols.value,
+      data: props.points.map((p) => p.conversations),
+    },
+    {
+      name: '消息发送数',
+      type: 'line',
+      smooth: true,
+      showSymbol: showSymbols.value,
+      data: props.points.map((p) => p.messages),
+    },
+    {
+      name: 'API 调用量',
+      type: 'line',
+      smooth: true,
+      showSymbol: showSymbols.value,
+      data: props.points.map((p) => p.apiCalls),
+    },
   ],
-  graphic: selectedIndex.value >= 0 ? [] : [],
 }));
 
 const selectedIndex = computed(() =>
@@ -85,6 +139,7 @@ const apiResultOption = computed(() => ({
   grid: baseGrid,
   xAxis: { type: 'category', data: labels.value },
   yAxis: { type: 'value' },
+  dataZoom,
   series: [
     { name: '成功', type: 'bar', stack: 'api', data: props.points.map((p) => p.apiSuccess) },
     { name: '失败', type: 'bar', stack: 'api', data: props.points.map((p) => p.apiFailed) },
@@ -98,10 +153,11 @@ const latencyOption = computed(() => ({
   grid: baseGrid,
   xAxis: { type: 'category', data: labels.value, boundaryGap: false },
   yAxis: { type: 'value', name: 'ms' },
+  dataZoom,
   series: [
-    { name: 'AVG', type: 'line', smooth: true, data: props.points.map((p) => p.latencyAvg) },
-    { name: 'P95', type: 'line', smooth: true, data: props.points.map((p) => p.latencyP95) },
-    { name: 'P99', type: 'line', smooth: true, data: props.points.map((p) => p.latencyP99) },
+    { name: 'AVG', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.latencyAvg) },
+    { name: 'P95', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.latencyP95) },
+    { name: 'P99', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.latencyP99) },
   ],
 }));
 
@@ -112,10 +168,11 @@ const websocketOption = computed(() => ({
   grid: baseGrid,
   xAxis: { type: 'category', data: labels.value, boundaryGap: false },
   yAxis: { type: 'value' },
+  dataZoom,
   series: [
-    { name: '连接数', type: 'line', smooth: true, areaStyle: {}, data: props.points.map((p) => p.wsConnections) },
-    { name: '断开数', type: 'line', smooth: true, data: props.points.map((p) => p.wsDisconnects) },
-    { name: '重连数', type: 'line', smooth: true, data: props.points.map((p) => p.wsReconnects) },
+    { name: '连接数', type: 'line', smooth: true, showSymbol: showSymbols.value, areaStyle: {}, data: props.points.map((p) => p.wsConnections) },
+    { name: '断开数', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.wsDisconnects) },
+    { name: '重连数', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.wsReconnects) },
   ],
 }));
 
@@ -126,11 +183,12 @@ const infraOption = computed(() => ({
   grid: baseGrid,
   xAxis: { type: 'category', data: labels.value, boundaryGap: false },
   yAxis: { type: 'value' },
+  dataZoom,
   series: [
-    { name: 'CPU %', type: 'line', smooth: true, data: props.points.map((p) => p.cpuUsage) },
-    { name: '内存 %', type: 'line', smooth: true, data: props.points.map((p) => p.memoryUsage) },
-    { name: '入站 Mbps', type: 'line', smooth: true, data: props.points.map((p) => p.networkIn) },
-    { name: '出站 Mbps', type: 'line', smooth: true, data: props.points.map((p) => p.networkOut) },
+    { name: 'CPU %', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.cpuUsage) },
+    { name: '内存 %', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.memoryUsage) },
+    { name: '入站 Mbps', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.networkIn) },
+    { name: '出站 Mbps', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.networkOut) },
   ],
 }));
 
@@ -144,9 +202,10 @@ const queueOption = computed(() => ({
     { type: 'value', name: '积压' },
     { type: 'value', name: 'ms' },
   ],
+  dataZoom,
   series: [
-    { name: '队列积压', type: 'line', smooth: true, data: props.points.map((p) => p.queueBacklog) },
-    { name: '消费延迟', type: 'line', smooth: true, yAxisIndex: 1, data: props.points.map((p) => p.consumeDelay) },
+    { name: '队列积压', type: 'line', smooth: true, showSymbol: showSymbols.value, data: props.points.map((p) => p.queueBacklog) },
+    { name: '消费延迟', type: 'line', smooth: true, showSymbol: showSymbols.value, yAxisIndex: 1, data: props.points.map((p) => p.consumeDelay) },
   ],
 }));
 </script>

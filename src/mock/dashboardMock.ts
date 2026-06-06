@@ -69,7 +69,7 @@ function spike(index: number) {
 
 function buildTimeBuckets(filters: DashboardFilters) {
   const [start, end] = filters.range;
-  const step = filters.granularityMinutes * 60 * 1000;
+  const step = resolveGranularityMinutes(filters.range) * 60 * 1000;
   const buckets: Date[] = [];
   for (let time = start.getTime(); time <= end.getTime(); time += step) {
     buckets.push(new Date(time));
@@ -82,23 +82,36 @@ export function createDefaultFilters(): DashboardFilters {
   const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
   return {
     range: [start, end],
-    granularityMinutes: 5,
+    granularity: 'auto',
   };
+}
+
+export function resolveGranularityMinutes(range: [Date, Date]) {
+  const durationHours = Math.max((range[1].getTime() - range[0].getTime()) / (60 * 60 * 1000), 0);
+  if (durationHours <= 24) return 5;
+  if (durationHours <= 24 * 7) return 30;
+  if (durationHours <= 24 * 30) return 120;
+  if (durationHours <= 24 * 90) return 360;
+  if (durationHours <= 24 * 365) return 1440;
+  return 10080;
 }
 
 export function mockTimeSeries(filters: DashboardFilters): Promise<TimeSeriesPoint[]> {
   const buckets = buildTimeBuckets(filters);
   const total = Math.max(buckets.length, 1);
+  const granularityMinutes = resolveGranularityMinutes(filters.range);
+  const flowScale = granularityMinutes / 5;
   const points = buckets.map((bucket, index) => {
     const load = wave(index, total) * spike(index);
-    const conversations = Math.round(clamp(28 * load + Math.random() * 9, 8, 82));
+    const baseConversations = clamp(28 * load + Math.random() * 9, 8, 82);
+    const conversations = Math.round(baseConversations * flowScale);
     const messages = Math.round(conversations * clamp(8.4 + Math.random() * 4.8, 6, 16));
     const apiCalls = Math.round(messages * clamp(3.1 + Math.random() * 1.2, 2.5, 5.4));
     const errorRate = clamp(0.006 + (load > 1.08 ? 0.008 : 0) + Math.random() * 0.01, 0.002, 0.045);
     const apiFailed = Math.round(apiCalls * errorRate);
     const wsConnections = Math.round(clamp(1320 * load + Math.random() * 210, 480, 2600));
     const activeConversations = Math.round(
-      clamp(wsConnections * 0.16 + conversations * 4.6 + (load > 1 ? (load - 0.85) * 115 : 0), 180, 780),
+      clamp(wsConnections * 0.16 + baseConversations * 4.6 + (load > 1 ? (load - 0.85) * 115 : 0), 180, 780),
     );
     const cpuUsage = round(clamp(34 + load * 34 + Math.random() * 7, 22, 92), 1);
     const memoryUsage = round(clamp(47 + load * 22 + Math.random() * 5, 35, 88), 1);
@@ -204,6 +217,7 @@ export function mockApiRanking(points: TimeSeriesPoint[]): Promise<ApiRankingIte
 export function mockCustomerLoadRanking(
   points: TimeSeriesPoint[],
   selectedTimestamp: string,
+  granularityMinutes: number,
 ): Promise<CustomerLoadRankingItem[]> {
   const pointIndex = Math.max(
     points.findIndex((point) => point.timestamp === selectedTimestamp),
@@ -218,7 +232,10 @@ export function mockCustomerLoadRanking(
     const burst = pointIndex % (index + 5) === 0 ? 1.32 : 1;
     const share = clamp(priorityWeight * burst + Math.random() * 0.2, 0.26, 1.38);
     const activeConversations = Math.round(clamp(totalActive * share / 6.8, 8, totalActive * 0.34));
-    const newConversations = Math.round(clamp(activeConversations * (0.12 + Math.random() * 0.15), 2, 72));
+    const flowScale = Math.max(granularityMinutes / 5, 1);
+    const newConversations = Math.round(
+      clamp(activeConversations * (0.12 + Math.random() * 0.15) * flowScale, 2, 72 * flowScale),
+    );
     const messages = Math.round(activeConversations * clamp(5.8 + Math.random() * 4.5, 4, 13));
     const apiCalls = Math.round(messages * clamp(2.7 + Math.random() * 1.4, 2.2, 5.2));
     const previousActive = Math.max(previousPoint.activeConversations * share / 7.5, 1);
@@ -240,15 +257,20 @@ export function mockCustomerLoadRanking(
   return Promise.resolve(items.sort((a, b) => b.activeConversations - a.activeConversations).slice(0, 10));
 }
 
-export function mockCustomerTrend(points: TimeSeriesPoint[], cid: string): Promise<CustomerTrendPoint[]> {
+export function mockCustomerTrend(
+  points: TimeSeriesPoint[],
+  cid: string,
+  granularityMinutes: number,
+): Promise<CustomerTrendPoint[]> {
   const customerIndex = Math.max(customers.findIndex(([customerCid]) => customerCid === cid), 0);
   const weight = clamp(0.18 - customerIndex * 0.008, 0.055, 0.18);
+  const flowScale = Math.max(granularityMinutes / 5, 1);
 
   return Promise.resolve(
     points.map((point, index) => {
       const pulse = index % (customerIndex + 9) === 0 ? 1.22 : 1;
       const activeConversations = Math.round(clamp(point.activeConversations * weight * pulse + Math.random() * 8, 4, 180));
-      const messages = Math.round(activeConversations * clamp(5.5 + Math.random() * 3.8, 4, 12));
+      const messages = Math.round(activeConversations * clamp(5.5 + Math.random() * 3.8, 4, 12) * flowScale);
       return {
         timestamp: point.timestamp,
         activeConversations,

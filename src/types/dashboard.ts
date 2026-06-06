@@ -1,6 +1,15 @@
 export interface DashboardFilters {
   range: [Date, Date];
-  granularityMinutes: 5;
+  granularity: 'auto';
+}
+
+export interface DashboardData {
+  actualGranularityMinutes: number;
+  summary: SummaryMetric[];
+  timeseries: TimeSeriesPoint[];
+  apiRanking: ApiRankingItem[];
+  serviceHealth: ServiceHealthItem[];
+  alerts: AlertItem[];
 }
 
 export interface SummaryMetric {

@@ -230,6 +230,14 @@ input {
   color: #0f172a;
 }
 
+.panel__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .chart {
   width: 100%;
   flex: 1;

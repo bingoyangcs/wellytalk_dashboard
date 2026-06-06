@@ -30,15 +30,26 @@ import {
   LineChart,
 } from 'echarts/charts';
 import {
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
+  MarkLineComponent,
   TooltipComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
 import { useResizablePanel } from '../composables/useResizablePanel';
 
-echarts.use([LineChart, BarChart, GridComponent, LegendComponent, TooltipComponent, CanvasRenderer]);
+echarts.use([
+  LineChart,
+  BarChart,
+  DataZoomComponent,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  TooltipComponent,
+  CanvasRenderer,
+]);
 
 const props = defineProps<{
   title: string;

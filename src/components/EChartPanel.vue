@@ -44,6 +44,7 @@ const props = defineProps<{
   title: string;
   subtitle?: string;
   option: EChartsCoreOption;
+  initialSpan?: number;
 }>();
 
 const emit = defineEmits<{
@@ -54,6 +55,7 @@ const chartRef = ref<HTMLDivElement>();
 const chart = shallowRef<ECharts>();
 let resizeObserver: ResizeObserver | undefined;
 const { panelRef, panelStyle, resizing, startResize } = useResizablePanel({
+  initialSpan: props.initialSpan,
   initialHeight: 384,
   onResize: () => chart.value?.resize(),
 });

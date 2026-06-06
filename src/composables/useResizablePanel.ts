@@ -1,6 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 interface ResizablePanelOptions {
+  columns?: number;
   initialSpan?: number;
   initialHeight?: number;
   minSpan?: number;
@@ -11,8 +12,9 @@ interface ResizablePanelOptions {
 }
 
 export function useResizablePanel(options: ResizablePanelOptions = {}) {
+  const columns = options.columns ?? 24;
   const panelRef = ref<HTMLElement>();
-  const columnSpan = ref(options.initialSpan ?? 6);
+  const columnSpan = ref(options.initialSpan ?? 12);
   const panelHeight = ref(options.initialHeight ?? 384);
   const panelWidth = ref(0);
   const resizing = ref(false);
@@ -47,7 +49,7 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
       startY: event.clientY,
       startSpan: columnSpan.value,
       startHeight: panelHeight.value,
-      columnWidth: gridWidth / 12,
+      columnWidth: gridWidth / columns,
     };
 
     if (event.currentTarget instanceof HTMLElement) {
@@ -66,8 +68,8 @@ export function useResizablePanel(options: ResizablePanelOptions = {}) {
 
     const spanDelta = Math.round((event.clientX - resizeState.startX) / resizeState.columnWidth);
     columnSpan.value = Math.min(
-      options.maxSpan ?? 12,
-      Math.max(options.minSpan ?? 4, resizeState.startSpan + spanDelta),
+      options.maxSpan ?? columns,
+      Math.max(options.minSpan ?? 8, resizeState.startSpan + spanDelta),
     );
     panelHeight.value = Math.min(
       options.maxHeight ?? 720,

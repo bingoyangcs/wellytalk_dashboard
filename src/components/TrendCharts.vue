@@ -4,6 +4,7 @@
       title="核心负载趋势"
       subtitle="点击任意时间点查看客户 cid 贡献"
       :option="loadTrendOption"
+      :initial-span="24"
       @chart-click="handleLoadTrendClick"
     />
   </section>

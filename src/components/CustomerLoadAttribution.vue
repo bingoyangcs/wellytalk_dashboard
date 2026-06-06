@@ -1,6 +1,11 @@
 <template>
   <section class="section-stack">
-    <section class="panel attribution-panel">
+    <section
+      ref="rankingPanelRef"
+      class="panel attribution-panel table-panel"
+      :class="{ 'panel--resizing': rankingResizing }"
+      :style="rankingPanelStyle"
+    >
       <div class="panel__header">
         <div>
           <h2>客户负载贡献 Top 10</h2>
@@ -10,7 +15,7 @@
       </div>
       <el-table
         :data="ranking"
-        height="420"
+        :height="rankingTableHeight"
         stripe
         highlight-current-row
         :current-row-key="selectedCid"
@@ -34,12 +39,20 @@
           </template>
         </el-table-column>
       </el-table>
+      <button
+        class="resize-handle"
+        type="button"
+        aria-label="拖拽调整客户负载贡献表大小"
+        title="拖拽调整大小"
+        @pointerdown.stop.prevent="startRankingResize"
+      ></button>
     </section>
 
     <EChartPanel
       title="选中客户近 24 小时趋势"
       :subtitle="selectedCustomerText"
       :option="customerTrendOption"
+      :initial-span="24"
     />
   </section>
 </template>
@@ -47,6 +60,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import EChartPanel from './EChartPanel.vue';
+import { useResizablePanel } from '../composables/useResizablePanel';
 import type { CustomerLoadRankingItem, CustomerTrendPoint } from '../types/dashboard';
 
 const props = defineProps<{
@@ -59,6 +73,20 @@ const props = defineProps<{
 const emit = defineEmits<{
   selectCustomer: [cid: string];
 }>();
+
+const {
+  panelRef: rankingPanelRef,
+  panelHeight: rankingPanelHeight,
+  panelStyle: rankingPanelStyle,
+  resizing: rankingResizing,
+  startResize: startRankingResize,
+} = useResizablePanel({
+  initialSpan: 24,
+  initialHeight: 486,
+  minHeight: 360,
+  maxHeight: 760,
+});
+const rankingTableHeight = computed(() => Math.max(260, rankingPanelHeight.value - 66));
 
 const selectedWindowText = computed(() => {
   if (!props.selectedTimestamp) return '未选择时间窗口';

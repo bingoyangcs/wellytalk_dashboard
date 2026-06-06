@@ -2,7 +2,7 @@
   <section v-if="variant === 'core'" class="section-stack">
     <EChartPanel
       title="核心负载趋势"
-      :subtitle="`展示粒度 ${granularityLabel} · 新增/消息/API 为窗口累计，活动对话为窗口状态值 · 点击时间点查看 cid 贡献`"
+      :subtitle="`展示粒度 ${granularityLabel} · 新增对话/消息为窗口累计，活动对话为窗口状态值 · 点击时间点查看 cid 贡献`"
       :option="loadTrendOption"
       :initial-span="24"
       @chart-click="handleLoadTrendClick"
@@ -73,7 +73,7 @@ const dataZoom = [
 ];
 
 const loadTrendOption = computed(() => ({
-  color: ['#7c3aed', '#2563eb', '#16a34a', '#f59e0b'],
+  color: ['#7c3aed', '#2563eb', '#16a34a'],
   tooltip,
   legend: { top: 6, right: 12 },
   grid: baseGrid,
@@ -109,13 +109,6 @@ const loadTrendOption = computed(() => ({
       smooth: true,
       showSymbol: showSymbols.value,
       data: props.points.map((p) => p.messages),
-    },
-    {
-      name: 'API 调用量',
-      type: 'line',
-      smooth: true,
-      showSymbol: showSymbols.value,
-      data: props.points.map((p) => p.apiCalls),
     },
   ],
 }));

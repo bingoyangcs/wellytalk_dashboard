@@ -136,9 +136,6 @@ export function mockSummary(points: TimeSeriesPoint[]): Promise<SummaryMetric[]>
     return Promise.resolve([]);
   }
 
-  const apiErrorRate = latest.apiCalls ? (latest.apiFailed / latest.apiCalls) * 100 : 0;
-  const healthyInstances = 29;
-  const totalInstances = 32;
   const trend = (current: number, before = 0) => (before ? round(((current - before) / before) * 100, 1) : 0);
 
   return Promise.resolve([
@@ -167,40 +164,6 @@ export function mockSummary(points: TimeSeriesPoint[]): Promise<SummaryMetric[]>
       description: '用户、客服、机器人消息总量',
     },
     {
-      key: 'apiCalls',
-      label: 'API 调用量',
-      value: latest.apiCalls,
-      trend: trend(latest.apiCalls, previous?.apiCalls),
-      status: latest.apiCalls > 3200 ? 'warning' : 'normal',
-      description: '最近一个 5 分钟窗口内接口请求总量',
-    },
-    {
-      key: 'apiErrorRate',
-      label: 'API 错误率',
-      value: round(apiErrorRate, 2),
-      unit: '%',
-      trend: trend(latest.apiFailed, previous?.apiFailed),
-      status: apiErrorRate > 3 ? 'critical' : apiErrorRate > 1.5 ? 'warning' : 'normal',
-      description: 'HTTP 4xx/5xx 与超时失败占比',
-    },
-    {
-      key: 'latencyP95',
-      label: 'API P95 响应时间',
-      value: latest.latencyP95,
-      unit: 'ms',
-      trend: trend(latest.latencyP95, previous?.latencyP95),
-      status: latest.latencyP95 > 380 ? 'critical' : latest.latencyP95 > 280 ? 'warning' : 'normal',
-      description: '接口响应时间 P95',
-    },
-    {
-      key: 'wsConnections',
-      label: 'WebSocket 当前连接数',
-      value: latest.wsConnections,
-      trend: trend(latest.wsConnections, previous?.wsConnections),
-      status: latest.wsConnections > 2400 ? 'warning' : 'normal',
-      description: '实时通信长连接在线数量',
-    },
-    {
       key: 'onlineAgents',
       label: '在线客服数',
       value: Math.round(clamp(92 + latest.conversations / 2.8, 88, 126)),
@@ -215,14 +178,6 @@ export function mockSummary(points: TimeSeriesPoint[]): Promise<SummaryMetric[]>
       trend: trend(latest.queueBacklog, previous?.queueBacklog),
       status: latest.queueBacklog > 180 ? 'critical' : latest.queueBacklog > 90 ? 'warning' : 'normal',
       description: '等待人工接入的用户',
-    },
-    {
-      key: 'healthyInstances',
-      label: '系统健康实例数',
-      value: `${healthyInstances}/${totalInstances}`,
-      trend: -3.1,
-      status: healthyInstances < totalInstances ? 'warning' : 'normal',
-      description: '网关、业务服务和中间件实例健康情况',
     },
   ]);
 }

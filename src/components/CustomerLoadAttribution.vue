@@ -38,10 +38,6 @@
         <el-table-column prop="activeConversations" label="活动对话" min-width="96" />
         <el-table-column prop="newConversations" label="新增" min-width="76" />
         <el-table-column prop="messages" label="消息" min-width="86" />
-        <el-table-column prop="apiCalls" label="API" min-width="86" />
-        <el-table-column label="贡献" min-width="90">
-          <template #default="{ row }">{{ row.contributionRate }}%</template>
-        </el-table-column>
         <el-table-column label="变化" min-width="90">
           <template #default="{ row }">
             <span :class="row.changeRate >= 0 ? 'trend-up' : 'trend-down'">
